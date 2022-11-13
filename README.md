@@ -24,8 +24,8 @@ We used Google BigQuery to select all the contracts that have at least one trans
 The collection was performed on the 8th of August 2019. We used the following request (also available here: https://bigquery.cloud.google.com/savedquery/281902325312:47fd9afda3f8495184d98db6ae36a40c)
 ```sql
 SELECT contracts.address, COUNT(1) AS tx_count
-  FROM `ethereum_blockchain.contracts` AS contracts
-  JOIN `ethereum_blockchain.transactions` AS transactions 
+  FROM `bigquery-public-data.crypto_ethereum.contracts` AS contracts
+  JOIN `bigquery-public-data.crypto_ethereum.transactions` AS transactions 
         ON (transactions.to_address = contracts.address)
   GROUP BY contracts.address
   ORDER BY tx_count DESC
