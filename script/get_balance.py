@@ -7,6 +7,7 @@ import time
 # get api token from cli argument
 API_KEY = sys.argv[1]
 MAX_ADDRESSES_PER_CALL = 20
+NUM_BACKUP_FILES = 3
 
 # create the Etherscan client
 etherscan_client = Etherscan(API_KEY)
@@ -19,6 +20,7 @@ if os.path.exists('balances.json'):
 
 # vars
 count = 0
+backup_file_counter = 0
 nb_contracts = 6826269 # note: update manually with the number of all_contract.csv lines
 
 # gets the current block
@@ -50,16 +52,21 @@ with open('all_contract.csv') as fp:
                     balances[new_balance['account']] = int(new_balance['balance'])
 
                 # save balances file
-                with open('balances.json', 'w') as fd:
+                file_number = backup_file_counter % NUM_BACKUP_FILES
+                with open(f'balances-{file_number}.json', 'w') as fd:
                     json.dump(balances, fd)
 
                 addresses_to_call = []
+                backup_file_counter += 1
 
             except Exception as identifier:
                 print(identifier)
                 continue
 
         line = fp.readline()
+
+with open('balances.json', 'w') as fd:
+    json.dump(balances, fd)
 
 # print final result
 print('Stored', len(balances), 'balances in total')
