@@ -11,24 +11,25 @@ For more details on the analysis, please see [the ICSE 2020 paper](https://arxiv
 ```
 ├─ contracts
 │  └─ <contract_address>.sol
-├─ contracts.csv.tar.gz # the meta data of all the contract
+├─ contracts.csv.gz    # the meta data of all the contract
 ├─ script
-│  ├─ get_contracts.py # collect the source code of the contracts from Etherscan
-│  └─ get_balance.py   # collect the balance of the contracts from Etherscan
+│  └─ get_contracts.py # collect the source code of the contracts from Etherscan
 ```
 
 ## Creation of the dataset
 
 1. **Collection of the contract addresses.**
-We used Google BigQuery to select all the contracts that have at least one transaction.
-The collection was performed on the 12th of November 2022. We used the following request:
+We used Google BigQuery to select all the contracts that have at least one transaction and it's balances.
+The collection was performed on the 14th of November 2022. We used the following request:
 ```sql
-SELECT contracts.address, COUNT(1) AS tx_count
+SELECT contracts.address AS address, COUNT(1) AS tx_count, MAX(balances.eth_balance) AS eth_balance
   FROM `bigquery-public-data.crypto_ethereum.contracts` AS contracts
-  JOIN `bigquery-public-data.crypto_ethereum.transactions` AS transactions 
+  JOIN `bigquery-public-data.crypto_ethereum.transactions` AS transactions
         ON (transactions.to_address = contracts.address)
+  JOIN `bigquery-public-data.crypto_ethereum.balances` AS balances
+        ON (transactions.to_address = balances.address)
   GROUP BY contracts.address
-  ORDER BY tx_count DESC
+  ORDER BY tx_count DESC, eth_balance DESC
 ```
 
 2. **Downloading the source code associated with the contract addresses.**
