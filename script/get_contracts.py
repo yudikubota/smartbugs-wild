@@ -49,9 +49,13 @@ nb_contracts = 6834430  # update with result of `wc -l all_contract.csv`
 def save_file():
     with open(stats_filename + '.tmp', "w") as fd:
         json.dump(stats, fd)
-        os.rename(stats_filename, stats_filename + '.bak')
-        os.rename(stats_filename + '.tmp', stats_filename)
-        os.remove(stats_filename + '.bak')
+
+        if (os.path.exists(stats_filename)):
+            os.rename(stats_filename, stats_filename + '.bak')
+        if (os.path.exists(stats_filename + '.tmp')):
+            os.rename(stats_filename + '.tmp', stats_filename)
+        if (os.path.exists(stats_filename + '.bak')):
+            os.remove(stats_filename + '.bak')
 
 
 def should_process_line(address, tx_count, eth_balance):
