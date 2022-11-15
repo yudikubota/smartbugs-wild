@@ -1,55 +1,119 @@
 import os
-from etherscan.contracts import Contract
+from etherscan import Etherscan
 import json
 import sys
 
-TOKEN = sys.argv[1]
+# constants
+SAVE_EACH = 50
 
-not_valid = []
-if os.path.exists('not_valid.json'):
-    with open('not_valid.json') as fd:
-        not_valid = json.load(fd)
-count = 0
-count_effective = 0
+# arguments
+API_KEY = sys.argv[1]
+proc_label = sys.argv[2]  # useful for parallel processing
+start = int(sys.argv[3])  # useful for parallel processing
+end = int(sys.argv[4])  # useful for parallel processing
 
-empty = 0
+# Etherscan client
+eth_client = Etherscan(API_KEY)
 
-start = 0
-if len(sys.argv) > 2:
-    start = int(sys.argv[2])
+# stats
+stats = {
+    "count": 0,  # general counting
+    "source_code_not_available": 0,  # etherscan returns no code (not verified)
+    "source_code_available": 0,  # etherscan returns the verified source code
+    "unaccessible": 0,  # etherscan says the contract does not exists
+    "no_tx": 0,  # contract has no transactions
+    "no_balance": 0,  # contract has no balance
+    "existent": 0,  # contract source code has already been download
+    "not_valid": [],  # exception occured
+    "original_start": 0,  # useful for parallel processing
+    "original_end": 0,  # useful for parallel processing
+}
 
-nb_contracts = 2263097
-with open('all_contract.csv') as fp:
+# load last stats
+stats_filename = f"stats_{proc_label}.json"
+if os.path.exists(stats_filename):
+    with open(stats_filename) as fd:
+        stats = json.load(fd)
+
+if (stats['count']):
+    start = stats['count']
+
+if not stats["original_start"]:
+    stats["original_start"] = start
+if not stats["original_end"] and end:
+    stats["original_end"] = end
+
+nb_contracts = 6834430  # update with result of `wc -l all_contract.csv`
+
+
+def save_file():
+    with open(stats_filename, "w") as fd:
+        json.dump(stats, fd)
+
+
+def should_process_line(address, tx_count, eth_balance):
+    if address == "address":
+        return False
+    if tx_count == "0":
+        stats["no_tx"] += 1
+        return False
+    if eth_balance == "0":
+        stats["no_balance"] += 1
+        return False
+    if start > stats["count"]:
+        return False
+    if address in stats["not_valid"]:
+        return False
+
+    contract_path = f"../contracts/{address}.sol"
+    if os.path.exists(contract_path):
+        stats["existent"] += 1
+        return False
+
+    return True
+
+
+def process_line(line):
+    # checks if pass
+    [address, tx_count, eth_balance] = line.split(",")
+    if not should_process_line(address, tx_count, eth_balance):
+        return
+
+    # print progress
+    if stats["count"] % 50 == 0:
+        print(
+            stats["count"],
+            "/",
+            nb_contracts,
+            round(stats["count"] * 100 / nb_contracts, 2),
+            "%",
+        )
+
+    try:
+        response = eth_client.get_contract_source_code(address)
+        sourcecode = response[0]["SourceCode"]
+        contract_path = f"../contracts/{address}.sol"
+        if len(sourcecode) == 0:
+            stats["source_code_not_available"] += 1
+        else:
+            stats["source_code_available"] += 1
+            sourcecode = bytes(sourcecode, "utf-8").decode("unicode_escape")
+            with open(contract_path, "w") as fd:
+                fd.write(sourcecode)
+
+    except Exception as identifier:
+        stats["not_valid"].append(address)
+        print(identifier)
+
+
+with open("all_contract.csv") as fp:
     line = fp.readline()
     while line:
-        address = line.split(',')[0]
-        if address == 'address':
-            line = fp.readline()
-            continue
-        count += 1
-        if start > count:
-            line = fp.readline()
-            continue
-        if address in not_valid:
-            line = fp.readline()
-            continue
-        contract_path = 'contracts/%s.json' % (address)
-        if os.path.exists(contract_path):
-            line = fp.readline()
-            continue
-        count_effective += 1
-        print(count, '/', nb_contracts, round(count_effective * 100 / nb_contracts, 2), '%', 'empty', empty, round(empty*100/count_effective,2), '%')
-        try:
-            api = Contract(address=address, api_key=TOKEN)
-            sourcecode = api.get_sourcecode()
-            if len(sourcecode[0]['SourceCode']) == 0:
-                empty += 1
-            with open(contract_path, 'w') as fd:
-                json.dump(sourcecode[0], fd)
-                
-        except Exception as identifier:
-            not_valid.append(address)
-            with open('not_valid.json', 'w') as fd:
-                json.dump(not_valid, fd)
-            print(identifier)
+        process_line(line)
+        stats["count"] += 1
+        if stats["count"] % SAVE_EACH == 0:
+            save_file()
+        if end != 0 and stats["count"] >= end:
+            save_file()
+            exit(0)
         line = fp.readline()
