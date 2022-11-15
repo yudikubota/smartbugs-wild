@@ -47,8 +47,11 @@ nb_contracts = 6834430  # update with result of `wc -l all_contract.csv`
 
 
 def save_file():
-    with open(stats_filename, "w") as fd:
+    with open(stats_filename + '.tmp', "w") as fd:
         json.dump(stats, fd)
+        os.rename(stats_filename, stats_filename + '.bak')
+        os.rename(stats_filename + '.tmp', stats_filename)
+        os.remove(stats_filename + '.bak')
 
 
 def should_process_line(address, tx_count, eth_balance):
@@ -79,16 +82,6 @@ def process_line(line):
     if not should_process_line(address, tx_count, eth_balance):
         return
 
-    # print progress
-    if stats["count"] % 50 == 0:
-        print(
-            stats["count"],
-            "/",
-            nb_contracts,
-            round(stats["count"] * 100 / nb_contracts, 2),
-            "%",
-        )
-
     try:
         response = eth_client.get_contract_source_code(address)
         sourcecode = response[0]["SourceCode"]
@@ -111,9 +104,22 @@ with open("all_contract.csv") as fp:
     while line:
         process_line(line)
         stats["count"] += 1
+
+        # print progress
+        if (stats["count"] % 50 == 0):
+            print(
+                stats["count"],
+                "/",
+                nb_contracts,
+                round(stats["count"] * 100 / nb_contracts, 2),
+                "%",
+            )
+
         if stats["count"] % SAVE_EACH == 0:
             save_file()
+
         if end != 0 and stats["count"] >= end:
             save_file()
             exit(0)
+
         line = fp.readline()
