@@ -1,10 +1,12 @@
-import os
 from etherscan import Etherscan
+from ratelimit import limits
+import os
 import json
 import sys
 
 # constants
 SAVE_EACH = 50
+ETHERSCAN_RATELIMIT_PER_SECOND = 5
 
 # arguments
 API_KEY = sys.argv[1]
@@ -79,6 +81,18 @@ def should_process_line(address, tx_count, eth_balance):
 
     return True
 
+@limits(calls=ETHERSCAN_RATELIMIT_PER_SECOND, period=1)
+def get_sourcecode(address):
+    response = eth_client.get_contract_source_code(address)
+    sourcecode = response[0]["SourceCode"]
+    contract_path = f"../contracts/{address}.sol"
+    if len(sourcecode) == 0:
+        stats["source_code_not_available"] += 1
+    else:
+        stats["source_code_available"] += 1
+        sourcecode = bytes(sourcecode, "utf-8").decode("unicode_escape")
+        with open(contract_path, "w") as fd:
+            fd.write(sourcecode)
 
 def process_line(line):
     # checks if pass
@@ -87,17 +101,7 @@ def process_line(line):
         return
 
     try:
-        response = eth_client.get_contract_source_code(address)
-        sourcecode = response[0]["SourceCode"]
-        contract_path = f"../contracts/{address}.sol"
-        if len(sourcecode) == 0:
-            stats["source_code_not_available"] += 1
-        else:
-            stats["source_code_available"] += 1
-            sourcecode = bytes(sourcecode, "utf-8").decode("unicode_escape")
-            with open(contract_path, "w") as fd:
-                fd.write(sourcecode)
-
+        get_sourcecode(address)
     except Exception as identifier:
         stats["not_valid"].append(address)
         print(identifier)
