@@ -26,6 +26,7 @@ stats = {
     "no_tx": 0,  # contract has no transactions
     "no_balance": 0,  # contract has no balance
     "existent": 0,  # contract source code has already been download
+    "existent_no_balance": 0,  # contract source code has already been download but was removed due to zero balance
     "not_valid": [],  # exception occured
     "original_start": 0,  # useful for parallel processing
     "original_end": 0,  # useful for parallel processing
@@ -48,6 +49,12 @@ if not stats["original_end"] and end:
 nb_contracts = 6834430  # update with result of `wc -l all_contract.csv`
 
 
+def remove_contract(address):
+    contract_path = f"../contracts/{address}.sol"
+    if (os.path.exists(contract_path)):
+        stats['existent_no_balance'] += 1
+        os.remove(contract_path)
+
 def save_file():
     with open(stats_filename + '.tmp', "w") as fd:
         json.dump(stats, fd)
@@ -66,8 +73,9 @@ def should_process_line(address, tx_count, eth_balance):
     if tx_count == "0":
         stats["no_tx"] += 1
         return False
-    if eth_balance == "0":
+    if eth_balance.strip() == "0":
         stats["no_balance"] += 1
+        remove_contract(address)
         return False
     if start > stats["count"]:
         return False
