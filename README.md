@@ -20,7 +20,7 @@ For more details on the analysis, please see [the ICSE 2020 paper](https://arxiv
 
 1. **Collection of the contract addresses.**
 We used Google BigQuery to select all the contracts that have at least one transaction and it's balances.
-The collection was performed on the 14th of November 2022. We used the following request:
+The collection was performed on the 4th of December 2022. We used the following request:
 ```sql
 SELECT contracts.address AS address, COUNT(1) AS tx_count, MAX(balances.eth_balance) AS eth_balance
   FROM `bigquery-public-data.crypto_ethereum.contracts` AS contracts
