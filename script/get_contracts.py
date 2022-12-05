@@ -1,5 +1,5 @@
 from etherscan import Etherscan
-from ratelimit import limits
+from ratelimit import limits, sleep_and_retry
 import os
 import json
 import sys
@@ -87,6 +87,7 @@ def should_process_line(block_timestamp, address, tx_count, eth_balance):
 
     return True
 
+@sleep_and_retry
 @limits(calls=ETHERSCAN_RATELIMIT_PER_SECOND, period=1)
 def get_sourcecode(address):
     response = eth_client.get_contract_source_code(address)
