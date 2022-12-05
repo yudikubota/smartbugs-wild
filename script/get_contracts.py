@@ -67,9 +67,7 @@ def save_file():
             os.remove(stats_filename + '.bak')
 
 
-def should_process_line(address, tx_count, eth_balance):
-    if address == "address":
-        return False
+def should_process_line(block_timestamp, address, tx_count, eth_balance):
     if tx_count == "0":
         stats["no_tx"] += 1
         return False
@@ -104,8 +102,8 @@ def get_sourcecode(address):
 
 def process_line(line):
     # checks if pass
-    [address, tx_count, eth_balance] = line.split(",")
-    if not should_process_line(address, tx_count, eth_balance):
+    [block_timestamp, address, tx_count, eth_balance] = line.split(",")
+    if not should_process_line(block_timestamp, address, tx_count, eth_balance):
         return
 
     try:
@@ -116,13 +114,14 @@ def process_line(line):
 
 
 with open("all_contract.csv") as fp:
+    line = fp.readline() # skip the first line
     line = fp.readline()
     while line:
         process_line(line)
         stats["count"] += 1
 
         # print progress
-        if (stats["count"] % 50 == 0):
+        if (stats["count"] % SAVE_EACH == 0):
             print(
                 stats["count"],
                 "/",
@@ -131,7 +130,6 @@ with open("all_contract.csv") as fp:
                 "%",
             )
 
-        if stats["count"] % SAVE_EACH == 0:
             save_file()
 
         if end != 0 and stats["count"] >= end:
