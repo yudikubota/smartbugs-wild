@@ -1,0 +1,46 @@
+{{
+  "language": "Solidity",
+  "sources": {
+    "contracts/BatchTransfer.sol": {
+      "content": "// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.10;
+
+interface ERC721Partial {
+    function transferFrom(address from, address to, uint256 tokenId) external;
+}
+
+contract BatchTransfer {
+    /// @notice Tokens on the given ERC-721 contract are transferred from you to a recipient.
+    ///         Don't forget to execute setApprovalForAll first to authorize this contract.
+    /// @param  tokenContract An ERC-721 contract
+    /// @param  from          Who sends the tokens?
+    /// @param  recipient     Who gets the tokens?
+    /// @param  tokenIds      Which token IDs are transferred?
+    function batchTransfer(ERC721Partial tokenContract, address from, address recipient, uint256[] calldata tokenIds) external {
+        for (uint256 index; index < tokenIds.length; index++) {
+            tokenContract.transferFrom(from, recipient, tokenIds[index]);
+        }
+    }
+}"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "devdoc",
+          "userdoc",
+          "metadata",
+          "abi"
+        ]
+      }
+    }
+  }
+}}
