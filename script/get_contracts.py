@@ -39,7 +39,7 @@ if os.path.exists(stats_filename):
         stats = json.load(fd)
 
 if (stats['count']):
-    start = stats['count']
+    start = int(stats['count'])
 
 if not stats["original_start"]:
     stats["original_start"] = start
@@ -68,14 +68,14 @@ def save_file():
 
 
 def should_process_line(block_timestamp, address, tx_count, eth_balance):
+    if start > stats["count"]:
+        return False
     if tx_count == "0":
         stats["no_tx"] += 1
         return False
     if eth_balance.strip() == "0":
         stats["no_balance"] += 1
         remove_contract(address)
-        return False
-    if start > stats["count"]:
         return False
     if address in stats["not_valid"]:
         return False
@@ -113,7 +113,7 @@ def process_line(line):
         stats["not_valid"].append(address)
         print(identifier)
 
-
+stats["count"] = 0
 with open("all_contract.csv") as fp:
     line = fp.readline() # skip the first line
     line = fp.readline()
