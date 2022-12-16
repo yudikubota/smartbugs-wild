@@ -109,9 +109,9 @@ def process_line(line):
 
     try:
         get_sourcecode(address)
-    except Exception as identifier:
+    except Exception as exp:
         stats["not_valid"].append(address)
-        print(identifier)
+        print(address, ': ', exp)
 
 stats["count"] = 0
 with open("all_contract.csv") as fp:
