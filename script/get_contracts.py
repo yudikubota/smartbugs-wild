@@ -97,7 +97,6 @@ def get_sourcecode(address):
         stats["source_code_not_available"] += 1
     else:
         stats["source_code_available"] += 1
-        sourcecode = bytes(sourcecode, "utf-8").decode("unicode_escape")
         with open(contract_path, "w") as fd:
             fd.write(sourcecode)
 
