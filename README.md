@@ -35,6 +35,9 @@ SELECT contracts.address AS address, COUNT(1) AS tx_count, MAX(balances.eth_bala
 2. **Downloading the source code associated with the contract addresses.**
 We used [Etherscan](https://etherscan.io) to download the contracts (the script used for the collection is available in the folder `script`).
 3. We filtered the contracts by identifying and removing duplicates.
+      fdupes contracts > dupes.txt
+      grep -c "^$" dupes.txt
+      python3 get_dupes.py
 
 ## Metrics
 
