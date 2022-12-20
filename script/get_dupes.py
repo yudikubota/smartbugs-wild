@@ -1,3 +1,4 @@
+import json
 
 counter = 0
 unique_counter = 0
@@ -31,4 +32,5 @@ with open("../dupes.txt") as fp:
         if (line != '\n'):
             line = line.replace('\n', '')
 
-print(output)
+# dump output as json
+json.dump(output, open('dupes.json', 'w'), indent=4)
